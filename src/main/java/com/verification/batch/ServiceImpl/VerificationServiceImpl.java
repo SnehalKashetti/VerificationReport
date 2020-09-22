@@ -25,13 +25,26 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import java.util.Calendar;
+import java.util.Date;
+
+import org.apache.poi.common.usermodel.Hyperlink;
+import org.apache.poi.common.usermodel.HyperlinkType;
+import org.apache.poi.hssf.usermodel.HSSFHyperlink;
+import org.apache.poi.hssf.util.HSSFColor;
+//import org.apache.poi.hpsf.Date;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFHyperlink;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -54,6 +67,7 @@ public class VerificationServiceImpl implements VerificationService {
 		
 		//style 1 for header
 		CellStyle style1 = Resultworkbook.createCellStyle();
+		CreationHelper createHelper = Resultworkbook.getCreationHelper();  
 		style1.setFillBackgroundColor(IndexedColors.ORANGE.getIndex());
 		style1.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 		style1.setBorderBottom(BorderStyle.THIN);
@@ -61,17 +75,39 @@ public class VerificationServiceImpl implements VerificationService {
 		style1.setBorderTop(BorderStyle.THIN);
 		style1.setBorderRight(BorderStyle.THIN);
 		style1.setAlignment(HorizontalAlignment.CENTER);
+		 Font font = Resultworkbook.createFont();
+         font.setColor(HSSFColor.HSSFColorPredefined.BLACK.getIndex());
+         style1.setFont(font);
+     
 		
 		resultSheet.createRow(0).createCell(5).setCellValue("2LS PRODUCTION MONITORING VERIFICATION REPORT");
 		resultSheet.getRow(0).setRowStyle(style1);
-		resultSheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 12));
+		//resultSheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 12));
 		resultSheet.createRow(1).createCell(0).setCellValue("DATE");
+		
+		CellStyle styleDate = Resultworkbook.createCellStyle();
+		
+		styleDate.setDataFormat(createHelper.createDataFormat().getFormat(
+				"dd-mm-yyyy"));
+		resultSheet.getRow(1).createCell(1).setCellStyle(styleDate);
+		
+		
+		
 //		  DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd");  
 //		   LocalDateTime now = LocalDateTime.now();  
 //		   System.out.println(dtf.format(now));
-		System.out.println(java.time.LocalDate.now());
-			resultSheet.getRow(1).createCell(1).setCellValue(java.time.LocalDate.now());
-
+		
+//		else if ( value instanceof Date ) {
+//		    cell.setCellValue( (Date) value );
+		
+//		 Date date = Calendar.getInstance().getTime();  
+//         DateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd hh:mm:ss");  
+//         String strDate = dateFormat.format(date);  
+//		    
+		    
+		//System.out.println(java.time.LocalDate.now());
+			//resultSheet.getRow(1).createCell(1).setCellValue(java.time.LocalDate.now());
+		resultSheet.getRow(1).getCell(1).setCellValue((Date) new Date());
 		resultSheet.createRow(2).createCell(0).setCellValue("APPLICATION");
 		//resultSheet.createRow(3).createCell(0).setCellValue("MESSEGING LOG VERIFICATON STATUS");
 		//resultSheet.getRow(3).setRowStyle(style1);
@@ -91,11 +127,11 @@ public class VerificationServiceImpl implements VerificationService {
 		
 		resultSheet.createRow(4).createCell(0).setCellValue("SR.NO");
 		resultSheet.getRow(4).createCell(1).setCellValue("JOB NAME");
-		resultSheet.getRow(4).createCell(2).setCellValue("STATUS");
-		resultSheet.getRow(4).createCell(3).setCellValue("JOB SCHEDULE");
+		resultSheet.getRow(4).createCell(2).setCellValue("BATCH");
+		resultSheet.getRow(4).createCell(3).setCellValue("STATUS");
 		resultSheet.getRow(4).createCell(4).setCellValue("event report exist?(number of event record)");
 		resultSheet.getRow(4).createCell(5).setCellValue("error report exist?(number of error record)");
-		resultSheet.getRow(4).createCell(6).setCellValue("verification status  ");
+		resultSheet.getRow(4).createCell(6).setCellValue("PATH");
 		resultSheet.getRow(4).createCell(7).setCellValue("Result");
 
 		resultSheet.getRow(4).getCell(0).setCellStyle(style2);
@@ -187,6 +223,13 @@ Batch bat= readRecord.readRecords(batch);
 		
 		CellStyle style3 = workbook.createCellStyle();
 		style3.setFillBackgroundColor(IndexedColors.LIGHT_BLUE.getIndex());
+		
+		CellStyle style4 = workbook.createCellStyle();
+		Font font = workbook.createFont();
+		font.setUnderline(Font.U_SINGLE);
+		font.setColor(Font.COLOR_RED);
+		style4.setFont(font);
+		CreationHelper createHelper = workbook.getCreationHelper();
         
 Row dataRow; 
 		
@@ -202,10 +245,23 @@ System.out.println(count);
 		if(bat.getBatchStatus().equals("RUN")) dataRow.getCell(3).setCellStyle(style3);
 		dataRow.createCell(4).setCellValue("yes ("+bat.getEventcount()+" records )");	
 		dataRow.createCell(5).setCellValue("yes ("+bat.getErrorcount()+" records )");
-		if (bat.getBatchName().equalsIgnoreCase("Omega Interface")) 
+		XSSFHyperlink link = (XSSFHyperlink)createHelper.createHyperlink(HyperlinkType.URL);
+		if (bat.getBatchName().equalsIgnoreCase("Omega Interface")) {
 			dataRow.createCell(6).setCellValue(config.getProperty("OMEGA_INPUT_FILE"));
-		else if (bat.getBatchName().equalsIgnoreCase("Claim Payment Bank Response"))
+			
+			//  link.setAddress("file:///C:/Users/kashe/OneDrive/Documents/Work/workspace/Verification Report/InputFile.txt");
+		      
+			
+			 link.setAddress("https://www.google.com");
+			 dataRow.getCell(6).setHyperlink((XSSFHyperlink) link);
+		      dataRow.getCell(6).setCellStyle(style4);
+		}
+		else if (bat.getBatchName().equalsIgnoreCase("Claim Payment Bank Response")) {
 			dataRow.createCell(6).setCellValue(config.getProperty("CLAIM_OUTPUT_FILE"));
+		 link.setAddress("https://www.google.com");
+			 dataRow.getCell(6).setHyperlink((XSSFHyperlink) link);
+		      dataRow.getCell(6).setCellStyle(style4);
+		}
 		sheet.autoSizeColumn(1);
 		sheet.autoSizeColumn(2);
 
@@ -322,6 +378,10 @@ System.out.println(count);
 			System.out.println("Current month: " + currentMonth);
 
 			return currentMonth;
+		}
+		
+		public void addHyperlink() {
+		
 		}
 	}
 
